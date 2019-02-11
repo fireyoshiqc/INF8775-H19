@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
             timeIt = true;
         }
 
-        vector<int64_t> numbers = LoadVector(path);
-        vector<int64_t> output;
+        vector<uint64_t> numbers = LoadVector(path);
+        vector<uint64_t> output;
 
         
         if (numbers.size() > 0)
@@ -80,15 +80,18 @@ int main(int argc, char *argv[])
             }
             else if (sortType == "quick")
             {
-                output = QuickSort(numbers);
+                QuickSort(numbers);
+                output = numbers;
             }
             else if (sortType == "quickSeuil")
             {
-                output = QuickThreshedSort(numbers);
+                QuickThreshedSort(numbers);
+                output = numbers;
             }
             else if (sortType == "quickRandomSeuil")
             {
-                output = QuickRandomThreshedSort(numbers);
+                QuickRandomThreshedSort(numbers);
+                output = numbers;
             }
             else
             {
@@ -98,13 +101,10 @@ int main(int argc, char *argv[])
 
             if (printIt)
             {
-                
                 for (auto&& number : output)
                 {
                     cout << number << " ";
                 }
-                cout << numbers.size() << endl;
-                cout << endl << output.size() << endl;
             }
 
         }
@@ -113,16 +113,17 @@ int main(int argc, char *argv[])
             cerr << "Aucun nombre à trier." << endl;
         }
     }
-    catch (exception e)
+    catch (const exception& e)
     {
+        cerr << e.what() << endl;
         return 1;
     }
     return 0;
 }
 
-vector<int64_t> LoadVector(string path)
+vector<uint64_t> LoadVector(string path)
 {
-    vector<int64_t> numbers;
+    vector<uint64_t> numbers;
     try {
         ifstream fs(path);
         if (!fs.is_open())
@@ -133,57 +134,102 @@ vector<int64_t> LoadVector(string path)
         string line;
         while (getline(fs, line))
         {
-            numbers.push_back(stoi(line));
+            numbers.push_back(stoull(line));
         }
         return numbers;
     }
     catch (exception e)
     {
+        cerr << e.what() << endl;
         return numbers;
     }
 }
 
-vector<int64_t> CountingSort(vector<int64_t>& numbers)
+vector<uint64_t> CountingSort(vector<uint64_t>& numbers)
 {
-    vector<int64_t> output;
+    vector<uint64_t> output;
     if (numbers.size() > 0)
     {
-        int64_t maxElm = *max_element(numbers.begin(), numbers.end());
-        vector<int> counts(maxElm + 1); // Zero inits
-        output.reserve(numbers.size());
-        
-        for (auto number : numbers)
+        try
         {
-            counts[number]++;
-        }
-        for (int64_t i = 0; i < counts.size(); i++)
-        {
-            for (int j = 0; j < counts[i]; j++)
+            uint64_t maxElm = *max_element(numbers.begin(), numbers.end());
+            vector<int> counts(maxElm + 1); // Zero inits
+            output.reserve(numbers.size());
+
+            for (auto number : numbers)
             {
-                output.push_back(i);
+                counts[number]++;
             }
+            for (uint64_t i = 0; i < counts.size(); i++)
+            {
+                for (int j = 0; j < counts[i]; j++)
+                {
+                    output.push_back(i);
+                }
+            }
+        }
+        catch (const exception& e)
+        {
+            cerr << e.what() << endl;
         }
     }
     return output;
 }
 
-vector<int64_t> QuickSort(vector<int64_t>& numbers)
+itr Partition(itr pivot, itr first, itr last)
 {
-    vector<int64_t> output;
+    if (pivot != first)
+        iter_swap(pivot, first);
+    itr left = first;
+    itr right = last;
+    last--;
 
-    return output;
+    while (true)
+    {
+        do {
+            left++;
+        } while (*left <= *pivot && left < last);
+        do {
+            right--;
+        } while (*right > *pivot && right > first);
+        if (left >= right)
+            break;
+       iter_swap(left, right);
+    }
+    std::iter_swap(pivot, right);
+    return right;
 }
 
-vector<int64_t> QuickThreshedSort(vector<int64_t>& numbers)
+void QuickSort(vector<uint64_t>& numbers)
 {
-    vector<int64_t> output;
-
-    return output;
+    if (numbers.size() > 1)
+    {
+        QuickSort(numbers.begin(), numbers.end());
+    }
 }
 
-vector<int64_t> QuickRandomThreshedSort(vector<int64_t>& numbers)
+void QuickSort(itr first, itr last)
 {
-    vector<int64_t> output;
+    if (distance(first, last) > 1) // See definition of std::distance
+    {
+        itr sorted = Partition(first + (last - first) / 2, first, last);
+        QuickSort(first, sorted);
+        QuickSort(sorted + 1, last);
+    }
+}
 
-    return output;
+void QuickThreshedSort(vector<uint64_t>& numbers)
+{
+}
+
+void QuickThreshedSort(itr first, itr last)
+{
+}
+
+void QuickRandomThreshedSort(vector<uint64_t>& numbers)
+{
+}
+
+void QuickRandomThreshedSort(itr first, itr last)
+{
 }
