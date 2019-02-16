@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <random>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -19,11 +20,13 @@ int main(int argc, char *argv[])
         string path = "";
         bool printIt = false;
         bool timeIt = false;
+        ptrdiff_t cutoffThreshold = 0;
 
         auto aPos = find(args.begin(), args.end(), "-a");
         auto ePos = find(args.begin(), args.end(), "-e");
         auto pPos = find(args.begin(), args.end(), "-p");
         auto tPos = find(args.begin(), args.end(), "-t");
+        auto xPos = find(args.begin(), args.end(), "-x");
     
         if (aPos != args.end())
         {
@@ -57,6 +60,22 @@ int main(int argc, char *argv[])
             timeIt = true;
         }
 
+        if (xPos != args.end())
+        {
+            auto index = xPos - args.begin();
+            cutoffThreshold = stoll(args.at(index + 1));
+            if (cutoffThreshold < 1)
+            {
+                cerr << "Le cutoff doit être plus grand que 0." << endl;
+                return 1;
+            }
+        }
+        else if (sortType == "quickSeuil" || sortType == "quickRandomSeuil")
+        {
+            cerr << "L'option -x <cutoff> est requise avec un entier positif pour utiliser cet algorithme." << endl;
+            return 1;
+        }
+
         vector<uint64_t> numbers = LoadVector(path);
         vector<uint64_t> output;
 
@@ -80,17 +99,50 @@ int main(int argc, char *argv[])
             }
             else if (sortType == "quick")
             {
-                QuickSort(numbers);
+                if (timeIt)
+                {
+                    using namespace std::chrono;
+                    auto start = steady_clock::now();
+                    QuickSort(numbers);
+                    auto end = steady_clock::now();
+                    duration<double, std::milli> delay = end - start;
+                    cout << delay.count() << endl;
+                }
+                else
+                    QuickSort(numbers);
+
                 output = numbers;
             }
             else if (sortType == "quickSeuil")
             {
-                QuickThreshedSort(numbers);
+                if (timeIt)
+                {
+                    using namespace std::chrono;
+                    auto start = steady_clock::now();
+                    QuickThreshedSort(numbers, cutoffThreshold);
+                    auto end = steady_clock::now();
+                    duration<double, std::milli> delay = end - start;
+                    cout << delay.count() << endl;
+                }
+                else
+                    QuickThreshedSort(numbers, cutoffThreshold);
+
                 output = numbers;
             }
             else if (sortType == "quickRandomSeuil")
             {
-                QuickRandomThreshedSort(numbers);
+                if (timeIt)
+                {
+                    using namespace std::chrono;
+                    auto start = steady_clock::now();
+                    QuickRandomThreshedSort(numbers, cutoffThreshold);
+                    auto end = steady_clock::now();
+                    duration<double, std::milli> delay = end - start;
+                    cout << delay.count() << endl;
+                }
+                else
+                    QuickRandomThreshedSort(numbers, cutoffThreshold);
+
                 output = numbers;
             }
             else
@@ -188,15 +240,15 @@ itr Partition(itr pivot, itr first, itr last)
     {
         do {
             left++;
-        } while (*left <= *pivot && left < last);
+        } while (*left <= *first && left < last);
         do {
             right--;
-        } while (*right > *pivot && right > first);
+        } while (*right > *first && right > first);
         if (left >= right)
             break;
        iter_swap(left, right);
     }
-    std::iter_swap(pivot, right);
+    std::iter_swap(first, right);
     return right;
 }
 
@@ -212,24 +264,65 @@ void QuickSort(itr first, itr last)
 {
     if (distance(first, last) > 1) // See definition of std::distance
     {
-        itr sorted = Partition(first + (last - first) / 2, first, last);
+        itr sorted = Partition(first, first, last);
         QuickSort(first, sorted);
         QuickSort(sorted + 1, last);
     }
 }
 
-void QuickThreshedSort(vector<uint64_t>& numbers)
+void QuickThreshedSort(vector<uint64_t>& numbers, ptrdiff_t threshold)
 {
+    if (numbers.size() > 1)
+    {
+        QuickThreshedSort(numbers.begin(), numbers.end(), threshold);
+    }
 }
 
-void QuickThreshedSort(itr first, itr last)
+void QuickThreshedSort(itr first, itr last, ptrdiff_t threshold)
 {
+    ptrdiff_t vectorDistance = distance(first, last) - 1;
+    if (vectorDistance > threshold)
+    {
+        itr sorted = Partition(first, first, last);
+        QuickThreshedSort(first, sorted, threshold);
+        QuickThreshedSort(sorted + 1, last, threshold);
+    }
+    else
+    {
+        BubbleSort(first, last);
+    }
 }
 
-void QuickRandomThreshedSort(vector<uint64_t>& numbers)
+void QuickRandomThreshedSort(vector<uint64_t>& numbers, ptrdiff_t threshold)
 {
+    if (numbers.size() > 1)
+    {
+        QuickRandomThreshedSort(numbers.begin(), numbers.end(), threshold);
+    }
 }
 
-void QuickRandomThreshedSort(itr first, itr last)
+void QuickRandomThreshedSort(itr first, itr last, ptrdiff_t threshold)
 {
+    ptrdiff_t vectorDistance = distance(first, last) - 1;
+    if (vectorDistance > threshold)
+    {
+        itr pivot = first;
+        srand(time(nullptr));
+        advance(pivot, rand() % vectorDistance);
+        itr sorted = Partition(pivot, first, last);
+        QuickRandomThreshedSort(first, sorted, threshold);
+        QuickRandomThreshedSort(sorted + 1, last, threshold);
+    }
+    else
+    {
+        BubbleSort(first, last);
+    }
+}
+
+void BubbleSort(itr first, itr last)
+{
+    for (auto j = last; j != first; j--)
+        for (auto i = first + 1; i != j; i++)
+            if (*i < *(i - 1))
+                iter_swap(i, i - 1);
 }
