@@ -9,7 +9,15 @@
 #include <chrono>
 #include <cstdint>
 
+#ifdef linux
+#include <unistd.h>
+#elif _WIN64
+#include <windows.h>
+#endif
+
 using namespace std;
+
+uint64_t maxMemoryAlloc;
 
 int main(int argc, char *argv[])
 {
@@ -20,13 +28,11 @@ int main(int argc, char *argv[])
         string path = "";
         bool printIt = false;
         bool timeIt = false;
-        ptrdiff_t cutoffThreshold = 0;
 
         auto aPos = find(args.begin(), args.end(), "-a");
         auto ePos = find(args.begin(), args.end(), "-e");
         auto pPos = find(args.begin(), args.end(), "-p");
         auto tPos = find(args.begin(), args.end(), "-t");
-        auto xPos = find(args.begin(), args.end(), "-x");
     
         if (aPos != args.end())
         {
@@ -60,22 +66,6 @@ int main(int argc, char *argv[])
             timeIt = true;
         }
 
-        if (xPos != args.end())
-        {
-            auto index = xPos - args.begin();
-            cutoffThreshold = stoll(args.at(index + 1));
-            if (cutoffThreshold < 1)
-            {
-                cerr << "Le cutoff doit être plus grand que 0." << endl;
-                return 1;
-            }
-        }
-        else if (sortType == "quickSeuil" || sortType == "quickRandomSeuil")
-        {
-            cerr << "L'option -x <cutoff> est requise avec un entier positif pour utiliser cet algorithme." << endl;
-            return 1;
-        }
-
         vector<uint64_t> numbers = LoadVector(path);
         vector<uint64_t> output;
 
@@ -85,6 +75,7 @@ int main(int argc, char *argv[])
 
             if (sortType == "counting")
             {
+                maxMemoryAlloc = 0.8*GetMaxSystemMemory() / sizeof(uint64_t);
                 if (timeIt)
                 {
                     using namespace std::chrono;
@@ -92,7 +83,10 @@ int main(int argc, char *argv[])
                     output = CountingSort(numbers);
                     auto end = steady_clock::now();
                     duration<double, std::milli> delay = end - start;
-                    cout << delay.count() << endl;
+                    if (output.size() == 0) // If the algorithm failed due to memory constraints, output 0.0.
+                        cout << 0.0 << endl;
+                    else
+                        cout << delay.count() << endl;
                 }
                 else
                     output = CountingSort(numbers);
@@ -119,13 +113,13 @@ int main(int argc, char *argv[])
                 {
                     using namespace std::chrono;
                     auto start = steady_clock::now();
-                    QuickThreshedSort(numbers, cutoffThreshold);
+                    QuickThreshedSort(numbers, 5);
                     auto end = steady_clock::now();
                     duration<double, std::milli> delay = end - start;
                     cout << delay.count() << endl;
                 }
                 else
-                    QuickThreshedSort(numbers, cutoffThreshold);
+                    QuickThreshedSort(numbers, 5);
 
                 output = numbers;
             }
@@ -135,13 +129,13 @@ int main(int argc, char *argv[])
                 {
                     using namespace std::chrono;
                     auto start = steady_clock::now();
-                    QuickRandomThreshedSort(numbers, cutoffThreshold);
+                    QuickRandomThreshedSort(numbers, 20);
                     auto end = steady_clock::now();
                     duration<double, std::milli> delay = end - start;
                     cout << delay.count() << endl;
                 }
                 else
-                    QuickRandomThreshedSort(numbers, cutoffThreshold);
+                    QuickRandomThreshedSort(numbers, 20);
 
                 output = numbers;
             }
@@ -205,6 +199,8 @@ vector<uint64_t> CountingSort(vector<uint64_t>& numbers)
         try
         {
             uint64_t maxElm = *max_element(numbers.begin(), numbers.end());
+            if (maxElm >= maxMemoryAlloc) // Allow 80% of RAM usage.
+                throw bad_alloc();
             vector<int> counts(maxElm + 1); // Zero inits
             output.reserve(numbers.size());
 
@@ -325,4 +321,18 @@ void BubbleSort(itr first, itr last)
         for (auto i = first + 1; i != j; i++)
             if (*i < *(i - 1))
                 iter_swap(i, i - 1);
+}
+
+uint64_t GetMaxSystemMemory()
+{
+#ifdef linux
+    long pages = sysconf(_SC_PHYS_PAGES);
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    return pages * page_size;
+#elif defined _WIN64
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    return status.ullTotalPhys;
+#endif
 }
