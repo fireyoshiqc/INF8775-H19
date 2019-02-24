@@ -17,7 +17,3 @@ void QuickThreshedSort(itr first, itr last, ptrdiff_t threshold);
 void QuickRandomThreshedSort(vector<uint64_t>& numbers, ptrdiff_t threshold);
 void QuickRandomThreshedSort(itr first, itr last, ptrdiff_t threshold);
 void BubbleSort(itr first, itr last);
-uint64_t GetMaxSystemMemory();
-
-
-

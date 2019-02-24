@@ -17,8 +17,6 @@
 
 using namespace std;
 
-uint64_t maxMemoryAlloc;
-
 int main(int argc, char *argv[])
 {
     try {
@@ -75,7 +73,6 @@ int main(int argc, char *argv[])
 
             if (sortType == "counting")
             {
-                maxMemoryAlloc = 0.8*GetMaxSystemMemory() / sizeof(uint64_t);
                 if (timeIt)
                 {
                     using namespace std::chrono;
@@ -199,8 +196,6 @@ vector<uint64_t> CountingSort(vector<uint64_t>& numbers)
         try
         {
             uint64_t maxElm = *max_element(numbers.begin(), numbers.end());
-            if (maxElm >= maxMemoryAlloc) // Allow 80% of RAM usage.
-                throw bad_alloc();
             vector<int> counts(maxElm + 1); // Zero inits
             output.reserve(numbers.size());
 
@@ -321,18 +316,4 @@ void BubbleSort(itr first, itr last)
         for (auto i = first + 1; i != j; i++)
             if (*i < *(i - 1))
                 iter_swap(i, i - 1);
-}
-
-uint64_t GetMaxSystemMemory()
-{
-#ifdef linux
-    long pages = sysconf(_SC_PHYS_PAGES);
-    long page_size = sysconf(_SC_PAGE_SIZE);
-    return pages * page_size;
-#elif defined _WIN64
-    MEMORYSTATUSEX status;
-    status.dwLength = sizeof(status);
-    GlobalMemoryStatusEx(&status);
-    return status.ullTotalPhys;
-#endif
 }
