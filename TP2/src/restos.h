@@ -19,3 +19,5 @@ struct Resto
 vector<Resto> ChargerExemplaire(string path, uint32_t& capaciteFournisseur);
 
 vector<Resto> Glouton(vector<Resto>& restos, uint32_t capaciteFournisseur);
+
+vector<Resto> ProgDyn(vector<Resto>& restos, uint32_t capaciteFournisseur);

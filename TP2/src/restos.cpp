@@ -87,23 +87,21 @@ int main(int argc, char *argv[])
                 else
                     solution = Glouton(restos, capaciteFournisseur);
             }
-            /*
             else if (typeAlgo == "progdyn")
             {
                 if (timeIt)
                 {
                     using namespace std::chrono;
                     auto start = steady_clock::now();
-                    QuickSort(numbers);
+                    solution = ProgDyn(restos, capaciteFournisseur);
                     auto end = steady_clock::now();
                     duration<double, std::milli> delay = end - start;
                     cout << delay.count() << endl;
                 }
                 else
-                    QuickSort(numbers);
-
-                output = numbers;
+                    solution = ProgDyn(restos, capaciteFournisseur);
             }
+            /*
             else if (typeAlgo == "local")
             {
                 if (timeIt)
@@ -250,4 +248,23 @@ vector<Resto> Glouton(vector<Resto>& restos, uint32_t capaciteFournisseur)
             resto.choisi = false;
     }
     return solution;
+}
+
+vector<Resto> ProgDyn(vector<Resto>& restos, uint32_t capaciteFournisseur)
+{
+    vector<vector<uint32_t>> dyn(restos.size(), vector<uint32_t>(capaciteFournisseur + 1)); // Zero-inited anyway
+    for (int i = 0; i < restos.size(); i++)
+    {
+        for (int j = 0; j < capaciteFournisseur + 1; j++)
+        {
+            int ri = restos.at(i).revenu;
+            int qi = restos.at(i).quantite;
+            // TODO: Fix this
+            uint32_t maxLeft = (((i - 1) >= 0 && (j - qi) >= 0) ? dyn[i - 1][j - qi] : 0) + ri;
+            uint32_t maxTop = (((i - 1) >= 0 && (j - 1) >= 0) ? dyn[i - 1][j - 1] : 0);
+            dyn[i][j] = max(maxLeft, maxTop);
+        }
+    }
+
+    return vector<Resto>();
 }
