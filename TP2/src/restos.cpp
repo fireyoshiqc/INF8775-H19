@@ -29,11 +29,13 @@ int main(int argc, char *argv[])
         string path = "";
         bool printIt = false;
         bool timeIt = false;
+        bool revenuIt = false;
 
         auto aPos = find(args.begin(), args.end(), "-a");
         auto ePos = find(args.begin(), args.end(), "-e");
         auto pPos = find(args.begin(), args.end(), "-p");
         auto tPos = find(args.begin(), args.end(), "-t");
+        auto rPos = find(args.begin(), args.end(), "-r");
 
         if (aPos != args.end())
         {
@@ -67,6 +69,11 @@ int main(int argc, char *argv[])
             timeIt = true;
         }
 
+        if (rPos != args.end())
+        {
+            revenuIt = true;
+        }
+
         uint32_t capaciteFournisseur = 0;
         vector<Resto> restos = ChargerExemplaire(path, capaciteFournisseur);
         vector<Resto> solution;
@@ -84,7 +91,9 @@ int main(int argc, char *argv[])
                     solution = Glouton(restos, capaciteFournisseur);
                     auto end = steady_clock::now();
                     duration<double, std::milli> delay = end - start;
-                    cout << delay.count() << endl;
+                    cout << delay.count() << (revenuIt ? "," : "");
+                    if (!revenuIt)
+                        cout << endl;
                 }
                 else
                     solution = Glouton(restos, capaciteFournisseur);
@@ -93,8 +102,8 @@ int main(int argc, char *argv[])
             {
                 bool okayToGo = true;
                 uint64_t ramNeeded = restos.size() * capaciteFournisseur * sizeof(uint32_t);
-                uint64_t gb16 = ((uint64_t)1 << 34);
-                if (ramNeeded > gb16)
+                uint64_t gb8 = ((uint64_t)1 << 33) * 1.5;
+                if (ramNeeded > gb8)
                 {
                     cerr << "Capacité mémoire excédée (nécessiterait ~" << (ramNeeded >> 30) << "GB de RAM)." << endl;
                     okayToGo = false;
@@ -107,7 +116,9 @@ int main(int argc, char *argv[])
                     solution = okayToGo ? ProgDyn(restos, capaciteFournisseur) : vector<Resto>();
                     auto end = steady_clock::now();
                     duration<double, std::milli> delay = end - start;
-                    cout << (okayToGo? delay.count() : 0) << endl;
+                    cout << (okayToGo? delay.count() : 0) << (revenuIt ? "," : "");
+                    if (!revenuIt)
+                        cout << endl;
                 }
                 else
                     solution = okayToGo ? ProgDyn(restos, capaciteFournisseur) : vector<Resto>();
@@ -121,7 +132,9 @@ int main(int argc, char *argv[])
                     solution = Heuristique(restos, capaciteFournisseur);
                     auto end = steady_clock::now();
                     duration<double, std::milli> delay = end - start;
-                    cout << delay.count() << endl;
+                    cout << delay.count() << (revenuIt ? "," : "");
+                    if (!revenuIt)
+                        cout << endl;
                 }
                 else
                     solution = Heuristique(restos, capaciteFournisseur);
@@ -138,6 +151,12 @@ int main(int argc, char *argv[])
                 {
                     cout << resto.id << " ";
                 }
+            }
+
+            if (revenuIt)
+            {
+                uint32_t revenu = accumulate(solution.begin(), solution.end(), 0, [](uint32_t sum, Resto resto) { return sum + resto.revenu; });
+                cout << revenu << endl;
             }
 
         }
@@ -278,7 +297,7 @@ vector<Resto> ProgDyn(vector<Resto>& restos, uint32_t capaciteFournisseur)
     vector<Resto> solution;
     int quantiteRestante = dyn[0].size() - 1;
 
-    for (int i = dyn.size() - 1; i > 0; i--)
+    for (int i = dyn.size() - 1; i >= 0; i--)
     {
         if ((i > 0 && dyn[i][quantiteRestante] != dyn[i - 1][quantiteRestante]) || (i == 0 && dyn[i][quantiteRestante] != 0))
         {
@@ -298,9 +317,6 @@ vector<Resto> Heuristique(vector<Resto>& restos, uint32_t capaciteFournisseur)
     uint32_t revenuSolution = accumulate(solution.begin(), solution.end(), 0, [](uint32_t sum, Resto resto) { return sum + resto.revenu; });
     int capaciteSolution = (int)capaciteFournisseur - (int)accumulate(solution.begin(), solution.end(), 0, [](uint32_t sum, Resto resto) { return sum + resto.quantite; });
     uint32_t meilleurRevenu = revenuSolution;
-
-    cout << "Revenu glouton: " << revenuSolution << endl;
-    cout << "Capacité glouton: " << capaciteSolution << endl;
 
     // VERSION ALL SWAPS
     sort(solution.begin(), solution.end(), [](Resto a, Resto b) { return a.id < b.id; });
@@ -485,7 +501,7 @@ vector<Resto> Heuristique(vector<Resto>& restos, uint32_t capaciteFournisseur)
             break;
     }
     */
-    cout << "Revenu heuristique: " << revenuSolution << endl;
-    cout << "Capacité heuristique: " << capaciteSolution << endl;
+    //cout << "Revenu heuristique: " << revenuSolution << endl;
+    //cout << "Capacité heuristique: " << capaciteSolution << endl;
     return solution;
 }
