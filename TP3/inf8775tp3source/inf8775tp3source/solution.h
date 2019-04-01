@@ -1,8 +1,9 @@
+#pragma once
 #include <vector>
 #include "problem.h"
 	
 struct Solution {
-	std::vector<int> models;
+	std::vector<Model> models;
 	int cost;
 };
 

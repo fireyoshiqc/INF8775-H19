@@ -10,29 +10,37 @@ Problem readProblem(std::string filename) {
 	fichier.open(filename);
 	if (!fichier) {
 		std::cerr << "Error opening file";
+		return problem;
 	}
-	unsigned int i;
+
 	fichier >> problem.nPieces;
-	for (i = 0; i < problem.nPieces; i++) {
-		int piece;
-		fichier >> piece;
-		problem.pieces.push_back(piece);
-	}
-	for (i = 0; i < problem.nPieces; i++) {
-		int price;
+
+	problem.availablePieceBudget = std::vector<int>(problem.nPieces);
+
+	std::vector<int> amounts(problem.nPieces);
+	std::vector<int> prices(problem.nPieces);
+	for (auto&& amount : amounts)
+		fichier >> amount;
+	for (auto&& price : prices)
 		fichier >> price;
-		problem.prices.push_back(price);
-	}
+	for (size_t i = 0; i < problem.availablePieceBudget.size(); i++)
+		problem.availablePieceBudget[i] = amounts[i] * prices[i];
+
 	fichier >> problem.nModels;
-	for (int modelLine = 0; modelLine < problem.nPieces; modelLine++) {
-		std::vector<int> model;
-		for (i = 0; i < problem.nPieces; i++) {
-			int piece;
-			fichier >> piece;
-			model.push_back(piece);
+
+	problem.models = std::vector<Model>(problem.nModels);
+
+	for (size_t i = 0; i < problem.models.size(); i++)
+	{
+		problem.models[i].modelCosts = std::vector<int>(prices.size());
+		for (size_t j = 0; j < prices.size(); j++)
+		{
+			int qty = 0;
+			fichier >> qty;
+			problem.models[i].modelCosts[j] = qty * prices[j];
 		}
-		problem.models.push_back(model);
 	}
+
 	fichier.close();
 
 	return problem;
@@ -42,21 +50,6 @@ void printProblem(Problem problem) {
 	std::cout << "---Problem description---" << std::endl;
 	std::cout << "g (nPieces): \t" << problem.nPieces << std::endl;
 	std::cout << "d (nModels): \t" << problem.nModels << std::endl;
-	std::cout << "pieces: ";
-	for (int i = 0; i < problem.nPieces; i++) {
-		std::cout << problem.pieces[i] << " ";
-	}
-	std::cout << std::endl << "prices: ";
-	for (int i = 0; i < problem.nPieces; i++) {
-		std::cout << problem.prices[i] << " ";
-	}
-	std::cout << std::endl << "models: " << std::endl;
-	for (int i = 0; i < problem.nModels; i++) {
-		std::cout << "M" << i << ": \t";
-		for (int j = 0; j < problem.nPieces; j++) {
-			std::cout << problem.models[i][j] << " ";
-		}
-		std::cout << std::endl;
-	}
-	std::cout << "---         ---" << std::endl;
+	std::cout << "All models:" << std::endl;
+	//problem.printModels();
 }
