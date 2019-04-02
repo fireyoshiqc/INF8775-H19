@@ -1,27 +1,30 @@
 #include "solution.h"
 
-void printSolution(const Solution & solution) {
-	for (int i = 0; i < solution.models.size(); i++) {
-		std::cout << "M" << i << ": \t";
-		for (int j = 0; j < solution.models[i].size(); j++) {
-			std::cout << solution.models[i][j] << " ";
-		}
-		std::cout << std::endl;
+void printSolution(const Solution & solution, const Problem problem) {
+	std::vector<int> chosenModels (problem.nModels);
+	for (size_t i = 0; i < solution.models.size(); i++) {
+		chosenModels[i] ++;
 	}
+	for (size_t i = 0; i < chosenModels.size(); i++) {
+		std::cout << chosenModels[i];
+	}
+	std::cout << std::endl;
 }
 
 /*
 	Function that gets the vector of remaining pieces from a solution
 */
+
 std::vector<int> getRemainingPieces(const Problem & problem, const Solution & solution) {
-	std::vector<int> remainingPieces = problem.pieces;
+	std::vector<int> remainingPieces = problem.availablePieceBudget;
 	for (int i = 0; i < solution.models.size(); i++) {
 		for(int j = 0; j < problem.nModels; i++) {
-			remainingPieces[i] -= solution.models[j][i];
+			remainingPieces[i] -= solution.models[j].modelCosts[i];
 		}
 	}
 	return remainingPieces;
 }
+
 
 /*
 	Function that determines if a solution is valid or not (kinda O(n²))
@@ -45,6 +48,7 @@ bool isRemainingPiecesValid(const std::vector<int> & remainingPieces) {
 /*
 	Function that computes the cost of a solution
 */
+/*
 int getCost(Problem problem, Solution solution) {
 	int cost = 0;
 	std::vector<int> remainingPieces = getRemainingPieces(problem, solution);
@@ -53,3 +57,4 @@ int getCost(Problem problem, Solution solution) {
 	}
 	return cost;
 }
+*/

@@ -39,6 +39,7 @@ struct Model {
 */
 
 struct Model {
+	size_t id;
 	std::vector<int> modelCosts;
 };
 

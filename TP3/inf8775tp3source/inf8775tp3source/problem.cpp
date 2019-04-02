@@ -32,6 +32,7 @@ Problem readProblem(std::string filename) {
 
 	for (size_t i = 0; i < problem.models.size(); i++)
 	{
+		problem.models[i].id = i;
 		problem.models[i].modelCosts = std::vector<int>(prices.size());
 		for (size_t j = 0; j < prices.size(); j++)
 		{

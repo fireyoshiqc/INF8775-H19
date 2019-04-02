@@ -118,6 +118,7 @@
     <ClCompile Include="genetic.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="problem.cpp" />
+    <ClCompile Include="solution.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="genetic.h" />

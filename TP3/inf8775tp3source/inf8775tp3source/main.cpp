@@ -17,6 +17,9 @@ int main() {
 	for (size_t i = 0; i < 10; i++)
 		population.emplace_back(generateRandomIndividual(problem));
 	std::cout << population.size() << std::endl;
+
+	solveGenetic(problem);
+
 	printProblem(problem);
 	#ifdef _WIN32
 		system("pause");
