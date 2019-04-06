@@ -3,13 +3,19 @@
 #include "problem.h"
 #include "solution.h"
 
-const int POPULATION_SIZE = 100;
-const int MINIMAL_MUTATION_ITERATIONS = 3;
-const int MINIMAL_ATLER_ITERATIONS = 5;
-const int EVOLVE_ITERATIONS = 1000;
-const int NUMBER_OF_SURVIVORS = 5; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
+//TODO: find the best possible parameters (trial and error / script to run the program using 
+// different parameters (would need restructuration of code to be able to pass parameters
+// as non-constant values )
 
-struct GeneticIndividual {
+const int POPULATION_SIZE = 500;
+const int MINIMAL_MUTATION_ITERATIONS = 2;
+const int MINIMAL_ATLER_ITERATIONS = 3;
+const int EVOLVE_ITERATIONS = 100;
+const int NUMBER_OF_SURVIVORS = 50; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
+const int RANDOM_GENERATION_FILL_THRESHOLD = 30; // max number of pieces remaining for each type before stopping random filling in individual generation
+
+struct GeneticIndividual 
+{
 	std::vector<int> modelGenes;
 	std::vector<int> budget;
 	int totalCost;
@@ -24,15 +30,22 @@ std::vector<T> slice(std::vector<T> &v, int m, int n)
 	return vec;
 }
 
-struct GeneticPopulation {
+struct GeneticPopulation 
+{
 	std::vector<GeneticIndividual> individuals;
 };
+
+std::vector<int> findBestModelsPerPieceType(const Problem & problem);
+
+void greedyFill(GeneticIndividual & individual, const Problem & problem, std::vector<int> & bestModelsPerPieceType);
+
+void randomFill(GeneticIndividual & individual, const Problem & problem);
 
 GeneticIndividual generateRandomIndividual(const Problem& problem);
 
 GeneticPopulation generateRandomPopulation(const Problem& problem);
 
-void mutateIndividual(GeneticIndividual & individual, const Problem & problem);
+void mutateIndividual(GeneticIndividual & individual, const Problem & problem, std::vector<int> & bestModelsPerPieceType);
 
 void switchIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t addModelIdx, size_t subModelIdx);
 
@@ -42,10 +55,10 @@ void sortPopulation(GeneticPopulation & population);
 
 std::vector<GeneticIndividual> selectSurvivors(GeneticPopulation & population);
 
-void genocide(GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem);
+void genocide(GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem, std::vector<int> & bestModelsPerPieceType);
 
 void printIndividual(GeneticIndividual ind);
 
-void evolve(GeneticPopulation & population, const Problem & problem);
+void evolve(GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType);
 
 void solveGenetic(const Problem & problem);

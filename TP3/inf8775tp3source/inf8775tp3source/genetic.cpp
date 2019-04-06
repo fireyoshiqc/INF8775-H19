@@ -1,7 +1,69 @@
 #include <algorithm>
 #include "genetic.h"
 
-GeneticIndividual generateRandomIndividual(const Problem & problem) {
+//TODO: make objects for solver to store problem in a bigger scope (too many functions needs the problem data)
+// also in object: store the values for greedy fill (the best model for each type of piece)
+//TODO: compute cost for each model and store it in structures Model to avoid recalculating it everytime
+
+float modelScoreForType(Model model, int pieceTypeIdx)
+{
+	int pieceQuantity = model.modelCosts[pieceTypeIdx];
+	float totalModelCost = (float) std::accumulate(model.modelCosts.begin(), model.modelCosts.end(), 0);
+	float score = (model.modelCosts[pieceTypeIdx] / totalModelCost);
+	return score;
+}
+
+std::vector<int> findBestModelsPerPieceType(const Problem & problem)
+{
+	std::vector<int> bestModelsPerPieceType(problem.nPieces);
+	for (int i = 0; i < problem.nPieces; i++) 
+	{
+		int bestModelIdx = 0;
+		float bestScore = 0.0;
+		for (int j = 0; j < problem.nModels; j++) 
+		{
+			float model_j_ScoreForPiece_i = modelScoreForType(problem.models[j], i);
+			if (model_j_ScoreForPiece_i > bestScore)
+			{
+				bestScore = model_j_ScoreForPiece_i;
+				bestModelIdx = j;
+			}
+		}
+		bestModelsPerPieceType[i] = bestModelIdx;
+	}
+	return bestModelsPerPieceType;
+}
+
+int findHighestPieceTypeSurplus(const GeneticIndividual & individual) {
+	return std::distance(individual.budget.begin(), std::max_element(individual.budget.begin(), individual.budget.end()));
+}
+
+void greedyFill(GeneticIndividual & individual, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
+	bool areAllUsed = std::all_of(individual.budget.begin(), individual.budget.end(), [](int amount) { return amount <= 0; });
+	while (!areAllUsed)
+	{
+		int highestPieceTypeSurplus = findHighestPieceTypeSurplus(individual);
+		int addModelIdx = bestModelsPerPieceType[highestPieceTypeSurplus];
+		addIndividualGenes(individual, problem, addModelIdx);
+		areAllUsed = std::all_of(individual.budget.begin(), individual.budget.end(), [](int amount) { return amount <= 0; });
+	}
+
+}
+
+void randomFill(GeneticIndividual & individual, const Problem & problem) 
+{
+	bool areAllUsed = std::all_of(individual.budget.begin(), individual.budget.end(), [](int amount) { return amount <= 0; });
+	while (!areAllUsed)
+	{
+		int addModelIdx = rand() % individual.modelGenes.size();
+		addIndividualGenes(individual, problem, addModelIdx);
+		areAllUsed = std::all_of(individual.budget.begin(), individual.budget.end(), [](int amount) { return amount <= 0; });
+	}
+}
+
+GeneticIndividual generateRandomIndividual(const Problem & problem) 
+{
 	GeneticIndividual individual;
 	individual.budget = problem.availablePieceBudget;
 	individual.modelGenes = std::vector<int> (problem.nModels);
@@ -14,8 +76,6 @@ GeneticIndividual generateRandomIndividual(const Problem & problem) {
 		{
 			individual.budget[i] -= problem.models[selectIdx].modelCosts[i];
 		}
-		
-
 		areAllUsed = std::all_of(individual.budget.begin(), individual.budget.end(), [](int amount) { return amount <= 0; });
 	}
 	
@@ -26,15 +86,52 @@ GeneticIndividual generateRandomIndividual(const Problem & problem) {
 	return individual;
 }
 
-GeneticPopulation generateRandomPopulation(const Problem & problem) {
+GeneticIndividual generateGreedyIndividual(const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
+	GeneticIndividual individual;
+	individual.budget = problem.availablePieceBudget;
+	individual.modelGenes = std::vector<int>(problem.nModels);
+	bool areAllUnderThreshold = false;
+	while (!areAllUnderThreshold)
+	{
+		size_t selectIdx = rand() % problem.nModels;
+		individual.modelGenes[selectIdx]++;
+		for (size_t i = 0; i < individual.budget.size(); i++)
+		{
+			individual.budget[i] -= problem.models[selectIdx].modelCosts[i];
+		}
+		areAllUnderThreshold = std::all_of(individual.budget.begin(), individual.budget.end(), [](int amount) { return amount <= RANDOM_GENERATION_FILL_THRESHOLD; });
+	}
+	individual.totalCost = abs(std::accumulate(individual.budget.begin(), individual.budget.end(), 0));
+	greedyFill(individual, problem, bestModelsPerPieceType);
+
+	return individual;
+}
+
+GeneticPopulation generateRandomPopulation(const Problem & problem) 
+{
 	GeneticPopulation population;
 	population.individuals.reserve(POPULATION_SIZE);
-	for (size_t i = 0; i < POPULATION_SIZE; i++)
+	for (size_t i = 0; i < POPULATION_SIZE; i++) 
+	{
 		population.individuals.emplace_back(generateRandomIndividual(problem));
+	}
 	return population;
 }
 
-void switchIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t addModelIdx, size_t subModelIdx) {
+GeneticPopulation generatGreedyPopulation(const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
+	GeneticPopulation population;
+	population.individuals.reserve(POPULATION_SIZE);
+	for (size_t i = 0; i < POPULATION_SIZE; i++)
+	{
+		population.individuals.emplace_back(generateGreedyIndividual(problem, bestModelsPerPieceType));
+	}
+	return population;
+}
+
+void switchIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t addModelIdx, size_t subModelIdx) 
+{
 	individual.modelGenes[addModelIdx] ++;
 	individual.modelGenes[subModelIdx] --;
 
@@ -55,7 +152,8 @@ void switchIndividualGenes(GeneticIndividual & individual, const Problem & probl
 
 }
 
-void addIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t index) {
+void addIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t index) 
+{
 	individual.modelGenes[index] ++;
 
 	// update budget
@@ -68,7 +166,8 @@ void addIndividualGenes(GeneticIndividual & individual, const Problem & problem,
 	individual.totalCost += std::accumulate(begin(problem.models[index].modelCosts), end(problem.models[index].modelCosts), 0);
 }
 
-void mutateIndividual(GeneticIndividual & individual, const Problem & problem) {
+void mutateIndividual(GeneticIndividual & individual, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
 	size_t addModelIdx, subModelIdx;
 	GeneticIndividual newIndividual = individual;
 	// switch MINIMAL_MUTATION_ITERATIONS models 
@@ -77,7 +176,8 @@ void mutateIndividual(GeneticIndividual & individual, const Problem & problem) {
 
 		//find valid random genes to modify
 		addModelIdx = rand() % newIndividual.modelGenes.size();
-		do {
+		do 
+		{
 			subModelIdx = rand() % newIndividual.modelGenes.size();
 		} while (newIndividual.modelGenes[subModelIdx] == 0);
 
@@ -85,11 +185,13 @@ void mutateIndividual(GeneticIndividual & individual, const Problem & problem) {
 
 	}
 
-	if (newIndividual.totalCost > individual.totalCost) {
+	if (newIndividual.totalCost > individual.totalCost) 
+	{
 		return; // If the new indivdual is already worst when it is not even valid yet, stop. 
 	}
 	
-	// add models until individual is valid
+	// I commented this out to keep in mind that a possible acceleration is to stop once the individual is already worst
+	/*
 	bool areAllUsed = std::all_of(newIndividual.budget.begin(), newIndividual.budget.end(), [](int amount) { return amount <= 0; });
 	bool isCostGreater = false;
 	while (!areAllUsed)
@@ -97,14 +199,22 @@ void mutateIndividual(GeneticIndividual & individual, const Problem & problem) {
 		addModelIdx = rand() % newIndividual.modelGenes.size();
 		addIndividualGenes(newIndividual, problem, addModelIdx);
 		areAllUsed = std::all_of(newIndividual.budget.begin(), newIndividual.budget.end(), [](int amount) { return amount <= 0; });
-		if (newIndividual.totalCost > individual.totalCost) {
+		if (newIndividual.totalCost > individual.totalCost) 
+		{
 			return; // If the new indivdual is already worst when it is not even valid yet, stop. 
 		}
+	}*/
+	greedyFill(newIndividual, problem, bestModelsPerPieceType);
+
+	if (newIndividual.totalCost < individual.totalCost)
+	{
+		individual = newIndividual;
 	}
-	individual = newIndividual;
+
 }
 
-void alterIndividual(GeneticIndividual & individual, const Problem & problem) {
+void alterIndividual(GeneticIndividual & individual, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
 	size_t addModelIdx, subModelIdx;
 	GeneticIndividual newIndividual = individual;
 	// switch MINIMAL_MUTATION_ITERATIONS models 
@@ -112,7 +222,8 @@ void alterIndividual(GeneticIndividual & individual, const Problem & problem) {
 	{
 		//find valid random genes to modify
 		addModelIdx = rand() % newIndividual.modelGenes.size();
-		do {
+		do 
+		{
 			subModelIdx = rand() % newIndividual.modelGenes.size();
 		} while (newIndividual.modelGenes[subModelIdx] == 0);
 
@@ -120,15 +231,20 @@ void alterIndividual(GeneticIndividual & individual, const Problem & problem) {
 	}
 
 	// add models until individual is valid
-	bool areAllUsed = std::all_of(newIndividual.budget.begin(), newIndividual.budget.end(), [](int amount) { return amount <= 0; });
-	bool isCostGreater = false;
-	while (!areAllUsed)
+	greedyFill(newIndividual, problem, bestModelsPerPieceType);
+	//randomFill(newIndividual, problem);
+	if (newIndividual.totalCost < individual.totalCost)
 	{
-		addModelIdx = rand() % newIndividual.modelGenes.size();
-		addIndividualGenes(newIndividual, problem, addModelIdx);
-		areAllUsed = std::all_of(newIndividual.budget.begin(), newIndividual.budget.end(), [](int amount) { return amount <= 0; });
+		individual = newIndividual;
 	}
-	individual = newIndividual;
+}
+
+GeneticIndividual crossover(const GeneticIndividual & individual_a, const GeneticIndividual & individual_b)
+{
+	//TODO: make a baby from the parents using something like taking the average, taking the mins of each and filling the rest, possibly using flip coins
+	GeneticIndividual baby;
+
+	return baby;
 }
 
 bool compareByCost(const GeneticIndividual &a, const GeneticIndividual &b)
@@ -136,51 +252,64 @@ bool compareByCost(const GeneticIndividual &a, const GeneticIndividual &b)
 	return a.totalCost < b.totalCost;
 }
 
-void sortPopulation(GeneticPopulation & population) {
+void sortPopulation(GeneticPopulation & population) 
+{
 	std::sort(population.individuals.begin(), population.individuals.end(), compareByCost);
 }
 
-std::vector<GeneticIndividual> selectSurvivors(GeneticPopulation & population) {
+std::vector<GeneticIndividual> selectSurvivors(GeneticPopulation & population) 
+{
 	sortPopulation(population);
 	std::vector<GeneticIndividual> survivors(NUMBER_OF_SURVIVORS);
 	survivors = slice(population.individuals, 0, NUMBER_OF_SURVIVORS);
 	return survivors;
 }
 
-void genocide(GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem) {
-	for (int i = NUMBER_OF_SURVIVORS; i < POPULATION_SIZE; i++) {
+void genocide(GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
+	for (int i = NUMBER_OF_SURVIVORS; i < POPULATION_SIZE; i++) 
+	{
 		int parentIdx = rand() % NUMBER_OF_SURVIVORS;
 		GeneticIndividual newIndividual = survivors[parentIdx];
-		alterIndividual(newIndividual, problem);
+		alterIndividual(newIndividual, problem, bestModelsPerPieceType);
 		population.individuals[i] = newIndividual;
 	}
 }
 
-void printIndividual(GeneticIndividual ind) {
+void printIndividual(GeneticIndividual ind) 
+{
 	std::cout << "Best individual cost: " << ind.totalCost << std::endl;
 	std::cout << "Best individual solution: ";
-	for (int i = 0; i < ind.modelGenes.size(); i++) {
+	for (int i = 0; i < ind.modelGenes.size(); i++) 
+	{
 		std::cout << ind.modelGenes[i] << " ";
 	}
 	std::cout << std::endl;
 }
 
-void evolve(GeneticPopulation & population, const Problem & problem) {
-	for (int i = 0; i < POPULATION_SIZE; i++) {
-		mutateIndividual(population.individuals[i], problem);
+void evolve(GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
+	for (int i = 0; i < POPULATION_SIZE; i++) 
+	{
+		mutateIndividual(population.individuals[i], problem, bestModelsPerPieceType);
 	}
 	std::vector<GeneticIndividual> survivors = selectSurvivors(population);
 
 	printIndividual(survivors[0]);
 	
-	genocide(population, survivors, problem);
+	genocide(population, survivors, problem, bestModelsPerPieceType);
 }
 
-void solveGenetic(const Problem & problem) {
-	GeneticPopulation population = generateRandomPopulation(problem);
-	for (int i = 0; i < EVOLVE_ITERATIONS; i++) {
+void solveGenetic(const Problem & problem) 
+{
+	std::vector<int> bestModelsPerPieceType = findBestModelsPerPieceType(problem);
+	//GeneticPopulation population = generateRandomPopulation(problem);
+	GeneticPopulation population = generatGreedyPopulation(problem, bestModelsPerPieceType);
+
+	for (int i = 0; i < EVOLVE_ITERATIONS; i++) 
+	{
 		std::cout << "starting evolution #" << i << std::endl;
-		evolve(population, problem);
+		evolve(population, problem, bestModelsPerPieceType);
 		std::cout << "finished evolution #" << i << std::endl;
 	}
 }
