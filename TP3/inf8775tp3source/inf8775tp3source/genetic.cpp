@@ -166,6 +166,20 @@ void addIndividualGenes(GeneticIndividual & individual, const Problem & problem,
 	individual.totalCost += std::accumulate(begin(problem.models[index].modelCosts), end(problem.models[index].modelCosts), 0);
 }
 
+void subIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t index)
+{
+	individual.modelGenes[index] --;
+
+	// update budget
+	for (size_t i = 0; i < individual.budget.size(); i++)
+	{
+		individual.budget[i] += problem.models[index].modelCosts[i];
+	}
+
+	//update cost
+	individual.totalCost -= std::accumulate(begin(problem.models[index].modelCosts), end(problem.models[index].modelCosts), 0);
+}
+
 void mutateIndividual(GeneticIndividual & individual, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
 	size_t addModelIdx, subModelIdx;
@@ -204,7 +218,19 @@ void mutateIndividual(GeneticIndividual & individual, const Problem & problem, s
 			return; // If the new indivdual is already worst when it is not even valid yet, stop. 
 		}
 	}*/
-	greedyFill(newIndividual, problem, bestModelsPerPieceType);
+
+	bool flip = rand() % 2;
+	if (flip)
+	{
+		greedyFill(newIndividual, problem, bestModelsPerPieceType);
+	}
+	else
+	{
+		randomFill(newIndividual, problem);
+	}
+
+	//greedyFill(newIndividual, problem, bestModelsPerPieceType);
+	//randomFill(newIndividual, problem);
 
 	if (newIndividual.totalCost < individual.totalCost)
 	{
@@ -239,10 +265,78 @@ void alterIndividual(GeneticIndividual & individual, const Problem & problem, st
 	}
 }
 
-GeneticIndividual crossover(const GeneticIndividual & individual_a, const GeneticIndividual & individual_b)
+void regressIndividual(int numberOfIterations, GeneticIndividual & individual, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
+	size_t modelIdx;
+	GeneticIndividual newIndividual = individual;
+	// substract numberOfIterations models 
+	for (int i = 0; i < numberOfIterations; i++)
+	{
+		//find valid random genes to modify
+		do
+		{
+			modelIdx = rand() % newIndividual.modelGenes.size();
+		} while (newIndividual.modelGenes[modelIdx] == 0);
+
+		subIndividualGenes(newIndividual, problem, modelIdx);
+	}
+	
+	bool flip = rand() % 2;
+	if (flip)
+	{
+		greedyFill(newIndividual, problem, bestModelsPerPieceType);
+	}
+	else
+	{
+		randomFill(newIndividual, problem);
+	}
+
+	//greedyFill(newIndividual, problem, bestModelsPerPieceType);
+	//randomFill(newIndividual, problem);
+
+	if (newIndividual.totalCost < individual.totalCost)
+	{
+		individual = newIndividual;
+	}
+}
+
+GeneticIndividual crossoverMin(const GeneticIndividual & individual_a, const GeneticIndividual & individual_b, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
 	//TODO: make a baby from the parents using something like taking the average, taking the mins of each and filling the rest, possibly using flip coins
 	GeneticIndividual baby;
+	baby.budget = problem.availablePieceBudget;
+	baby.modelGenes = std::vector<int>(problem.nModels);
+
+	int nGenesPreserved = problem.nModels * PROPORTION_PRESERVED_GENES_CROSSOVER / 100;
+	for (int i = 0; i < nGenesPreserved; i++)
+	{
+		if (individual_a.modelGenes[i] < individual_b.modelGenes[i]) 
+		{
+			baby.modelGenes[i] = individual_a.modelGenes[i];
+		}
+		else
+		{
+			baby.modelGenes[i] = individual_b.modelGenes[i];
+		}
+		for (int k = 0; k < baby.budget.size(); k++)
+		{
+			baby.budget[k] -= problem.models[i].modelCosts[k] * baby.modelGenes[i];
+		}
+	}
+	baby.totalCost = abs(std::accumulate(baby.budget.begin(), baby.budget.end(), 0));
+	
+	bool flip = rand() % 2;
+	if (flip)
+	{
+		greedyFill(baby, problem, bestModelsPerPieceType);
+	}
+	else
+	{
+		randomFill(baby, problem);
+	}
+	
+	//randomFill(baby, problem);
+	//greedyFill(baby, problem, bestModelsPerPieceType);
 
 	return baby;
 }
@@ -265,13 +359,38 @@ std::vector<GeneticIndividual> selectSurvivors(GeneticPopulation & population)
 	return survivors;
 }
 
-void genocide(GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+void nuclearCataclysm(GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
 	for (int i = NUMBER_OF_SURVIVORS; i < POPULATION_SIZE; i++) 
 	{
 		int parentIdx = rand() % NUMBER_OF_SURVIVORS;
 		GeneticIndividual newIndividual = survivors[parentIdx];
 		alterIndividual(newIndividual, problem, bestModelsPerPieceType);
+		population.individuals[i] = newIndividual;
+	}
+}
+
+void adaptation(int numberOfIterations, GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+{
+	for (int i = NUMBER_OF_SURVIVORS; i < POPULATION_SIZE; i++)
+	{
+		int parentIdx = rand() % NUMBER_OF_SURVIVORS;
+		GeneticIndividual newIndividual = survivors[parentIdx];
+		regressIndividual(numberOfIterations, newIndividual, problem, bestModelsPerPieceType);
+		population.individuals[i] = newIndividual;
+	}
+}
+
+void violentBreeding(GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem, std::vector<int> & bestModelsPerPieceType) {
+	for (int i = NUMBER_OF_SURVIVORS; i < POPULATION_SIZE; i++)
+	{
+		GeneticIndividual alphaMale = survivors[0];
+		int sexSlaveIdx;
+		do
+		{
+			sexSlaveIdx = rand() % NUMBER_OF_SURVIVORS;
+		} while (sexSlaveIdx == 0);
+		GeneticIndividual newIndividual = crossoverMin(alphaMale, survivors[sexSlaveIdx], problem, bestModelsPerPieceType);
 		population.individuals[i] = newIndividual;
 	}
 }
@@ -287,7 +406,7 @@ void printIndividual(GeneticIndividual ind)
 	std::cout << std::endl;
 }
 
-void evolve(GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+void evolve(int i, GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
 	for (int i = 0; i < POPULATION_SIZE; i++) 
 	{
@@ -297,7 +416,23 @@ void evolve(GeneticPopulation & population, const Problem & problem, std::vector
 
 	printIndividual(survivors[0]);
 	
-	genocide(population, survivors, problem, bestModelsPerPieceType);
+	bool flip = rand() % 3;
+	if (flip == 0) 
+	{
+		//violentBreeding(population, survivors, problem, bestModelsPerPieceType);
+		adaptation((MINIMAL_REGRESS_ITERATIONS + i/10), population, survivors, problem, bestModelsPerPieceType);
+	}
+	else if (flip == 1)
+	{
+		adaptation((MINIMAL_REGRESS_ITERATIONS), population, survivors, problem, bestModelsPerPieceType);
+	}
+	else {
+		adaptation((MINIMAL_REGRESS_ITERATIONS + i / 5), population, survivors, problem, bestModelsPerPieceType);
+	}
+
+	//violentBreeding(population, survivors, problem, bestModelsPerPieceType);
+	//nuclearCataclysm(population, survivors, problem, bestModelsPerPieceType);
+	//adaptation(population, survivors, problem, bestModelsPerPieceType);
 }
 
 void solveGenetic(const Problem & problem) 
@@ -309,7 +444,7 @@ void solveGenetic(const Problem & problem)
 	for (int i = 0; i < EVOLVE_ITERATIONS; i++) 
 	{
 		std::cout << "starting evolution #" << i << std::endl;
-		evolve(population, problem, bestModelsPerPieceType);
+		evolve(i, population, problem, bestModelsPerPieceType);
 		std::cout << "finished evolution #" << i << std::endl;
 	}
 }
