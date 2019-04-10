@@ -11,7 +11,7 @@ Solution solver(const Problem & problem) {
 
 int main() {
 	srand(time(nullptr));
-	Problem problem = readProblem("../../exemplaires/LEGO_50_50_2000");
+	Problem problem = readProblem("../../exemplaires/LEGO_50_100_1000");
 	std::vector<GeneticIndividual> population;
 	population.reserve(10);
 	for (size_t i = 0; i < 10; i++)

@@ -385,11 +385,11 @@ void violentBreeding(GeneticPopulation & population, std::vector<GeneticIndividu
 	for (int i = NUMBER_OF_SURVIVORS; i < POPULATION_SIZE; i++)
 	{
 		GeneticIndividual alphaMale = survivors[0];
-		int sexSlaveIdx;
+		int willingPartner;
 		do
 		{
-			sexSlaveIdx = rand() % NUMBER_OF_SURVIVORS;
-		} while (sexSlaveIdx == 0);
+			willingPartner = rand() % NUMBER_OF_SURVIVORS;
+		} while (willingPartner == 0);
 		GeneticIndividual newIndividual = crossoverMin(alphaMale, survivors[sexSlaveIdx], problem, bestModelsPerPieceType);
 		population.individuals[i] = newIndividual;
 	}
