@@ -7,13 +7,13 @@
 // different parameters (would need restructuration of code to be able to pass parameters
 // as non-constant values )
 
-const int POPULATION_SIZE = 10000;
+const int POPULATION_SIZE = 3000;
 const int PROPORTION_PRESERVED_GENES_CROSSOVER = 60; //0-100 (percentage)
 const int MINIMAL_MUTATION_ITERATIONS = 2;
 const int MINIMAL_ATLER_ITERATIONS = 2;
 const int MINIMAL_REGRESS_ITERATIONS = 2;
-const int EVOLVE_ITERATIONS = 300;
-const int NUMBER_OF_SURVIVORS = 10; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
+const int EVOLVE_ITERATIONS = 30000;
+const int NUMBER_OF_SURVIVORS = 2800; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
 const int RANDOM_GENERATION_FILL_THRESHOLD = 10; // max number of pieces remaining for each type before stopping random filling in individual generation
 
 struct GeneticIndividual 
@@ -54,6 +54,8 @@ void switchIndividualGenes(GeneticIndividual & individual, const Problem & probl
 void addIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t index);
 
 GeneticIndividual crossoverMin(const GeneticIndividual & individual_a, const GeneticIndividual & individual_b, const Problem & problem, std::vector<int> & bestModelsPerPieceType);
+
+GeneticIndividual crossoverAvg(const GeneticIndividual& individual_a, const GeneticIndividual& individual_b, const Problem& problem, std::vector<int>& bestModelsPerPieceType);
 
 bool compareByCost(const GeneticIndividual &a, const GeneticIndividual &b);
 
