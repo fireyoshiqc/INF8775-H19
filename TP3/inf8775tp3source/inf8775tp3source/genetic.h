@@ -65,6 +65,6 @@ void nuclearCataclysm(GeneticPopulation & population, std::vector<GeneticIndivid
 
 void printIndividual(GeneticIndividual ind);
 
-void evolve(int i, GeneticPopulation& population, const Problem& problem, std::vector<int>& bestModelsPerPieceType);
+void evolve(GeneticPopulation& population, const Problem& problem, std::vector<int>& bestModelsPerPieceType);
 
 void solveGenetic(const Problem & problem, int nIterations = EVOLVE_ITERATIONS);

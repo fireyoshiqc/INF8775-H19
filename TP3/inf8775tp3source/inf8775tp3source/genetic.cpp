@@ -373,7 +373,7 @@ void printIndividual(GeneticIndividual ind)
 	std::cout << std::endl;
 }
 
-void evolve(int i, GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
+void evolve(GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
 #pragma omp parallel for
 	for (int i = 0; i < POPULATION_SIZE; i++) 
@@ -402,12 +402,15 @@ void solveGenetic(const Problem & problem, int nIterations)
 	GeneticPopulation population = generateRandomPopulation(problem);
 	//GeneticPopulation population = generatGreedyPopulation(problem, bestModelsPerPieceType);
 
+#ifndef REMISE
 	for (int i = 0; i < nIterations; i++) 
 	{
-#ifndef REMISE
 		std::cout << "starting evolution #" << i << std::endl;
+#else
+	while (true)
+	{
 #endif
-		evolve(i, population, problem, bestModelsPerPieceType);
+		evolve(population, problem, bestModelsPerPieceType);
 #ifndef REMISE
 		std::cout << "finished evolution #" << i << std::endl;
 #endif
