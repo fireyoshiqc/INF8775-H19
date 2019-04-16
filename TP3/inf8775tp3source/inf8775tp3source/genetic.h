@@ -7,6 +7,7 @@
 // different parameters (would need restructuration of code to be able to pass parameters
 // as non-constant values )
 
+
 const int POPULATION_SIZE = 30000;
 const int PROPORTION_PRESERVED_GENES_CROSSOVER = 60; //0-100 (percentage)
 const int MINIMAL_MUTATION_ITERATIONS = 2;
