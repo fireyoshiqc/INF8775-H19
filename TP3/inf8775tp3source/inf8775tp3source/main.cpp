@@ -1,6 +1,9 @@
 #include "problem.h"
 #include "genetic.h"
 #include <ctime>
+#include <iostream>
+#include <vector>
+#include <algorithm>
 
 int main(int argc, char *argv[]) {
 	srand(time(nullptr));
