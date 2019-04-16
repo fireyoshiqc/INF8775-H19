@@ -6,7 +6,7 @@
 // also in object: store the values for greedy fill (the best model for each type of piece)
 //TODO: compute cost for each model and store it in structures Model to avoid recalculating it everytime
 
-//#define REMISE
+#define REMISE
 
 float modelScoreForType(Model model, int pieceTypeIdx)
 {
@@ -84,6 +84,7 @@ GeneticIndividual generateRandomIndividual(const Problem & problem)
 	
 
 	individual.totalCost = abs(std::accumulate(individual.budget.begin(), individual.budget.end(), 0));
+	//printIndividual(individual);
 	
 
 	return individual;
@@ -171,10 +172,7 @@ void addIndividualGenes(GeneticIndividual & individual, const Problem & problem,
 
 void subIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t index)
 {
-	/*if (individual.modelGenes[index] <= 0) {
-		std::cout << "THE NUMBER OF MODELS CAN'T BE NEGATIVE!!!" << std::endl;
-	}
-	individual.modelGenes[index] --;*/
+	individual.modelGenes[index] --;
 
 	// update budget
 	for (size_t i = 0; i < individual.budget.size(); i++)
@@ -209,34 +207,8 @@ void mutateIndividual(GeneticIndividual & individual, const Problem & problem, s
 	{
 		return; // If the new indivdual is already worst when it is not even valid yet, stop. 
 	}
-	
-	// I commented this out to keep in mind that a possible acceleration is to stop once the individual is already worst
-	/*
-	bool areAllUsed = std::all_of(newIndividual.budget.begin(), newIndividual.budget.end(), [](int amount) { return amount <= 0; });
-	bool isCostGreater = false;
-	while (!areAllUsed)
-	{
-		addModelIdx = rand() % newIndividual.modelGenes.size();
-		addIndividualGenes(newIndividual, problem, addModelIdx);
-		areAllUsed = std::all_of(newIndividual.budget.begin(), newIndividual.budget.end(), [](int amount) { return amount <= 0; });
-		if (newIndividual.totalCost > individual.totalCost) 
-		{
-			return; // If the new indivdual is already worst when it is not even valid yet, stop. 
-		}
-	}*/
 
-	bool flip = rand() % 2;
-	if (flip)
-	{
-		greedyFill(newIndividual, problem, bestModelsPerPieceType);
-	}
-	else
-	{
-		randomFill(newIndividual, problem);
-	}
-
-	//greedyFill(newIndividual, problem, bestModelsPerPieceType);
-	//randomFill(newIndividual, problem);
+	greedyFill(newIndividual, problem, bestModelsPerPieceType);
 
 	if (newIndividual.totalCost < individual.totalCost)
 	{
@@ -263,8 +235,8 @@ void alterIndividual(GeneticIndividual & individual, const Problem & problem, st
 	}
 
 	// add models until individual is valid
-	greedyFill(newIndividual, problem, bestModelsPerPieceType);
-	//randomFill(newIndividual, problem);
+	//greedyFill(newIndividual, problem, bestModelsPerPieceType);
+	randomFill(newIndividual, problem);
 	if (newIndividual.totalCost < individual.totalCost)
 	{
 		individual = newIndividual;
@@ -286,10 +258,8 @@ void regressIndividual(int numberOfIterations, GeneticIndividual & individual, c
 
 		subIndividualGenes(newIndividual, problem, modelIdx);
 	}
-	
 
 	randomFill(newIndividual, problem);
-
 
 	if (newIndividual.totalCost < individual.totalCost)
 	{
@@ -299,7 +269,6 @@ void regressIndividual(int numberOfIterations, GeneticIndividual & individual, c
 
 GeneticIndividual crossoverMin(const GeneticIndividual & individual_a, const GeneticIndividual & individual_b, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
-	//TODO: make a baby from the parents using something like taking the average, taking the mins of each and filling the rest, possibly using flip coins
 	GeneticIndividual baby;
 	baby.budget = problem.availablePieceBudget;
 	baby.modelGenes = std::vector<int>(problem.nModels);
@@ -331,9 +300,6 @@ GeneticIndividual crossoverMin(const GeneticIndividual & individual_a, const Gen
 	{
 		randomFill(baby, problem);
 	}
-	
-	//randomFill(baby, problem);
-	//greedyFill(baby, problem, bestModelsPerPieceType);
 
 	return baby;
 }
@@ -421,8 +387,6 @@ void evolve(int i, GeneticPopulation & population, const Problem & problem, std:
 	int minimalRegressIterations = problem.nModels / 5;
 	adaptation((minimalRegressIterations), population, survivors, problem, bestModelsPerPieceType);
 
-
-
 	//violentBreeding(population, survivors, problem, bestModelsPerPieceType);
 	//nuclearCataclysm(population, survivors, problem, bestModelsPerPieceType);
 	//adaptation(population, survivors, problem, bestModelsPerPieceType);
@@ -430,85 +394,6 @@ void evolve(int i, GeneticPopulation & population, const Problem & problem, std:
 
 bool isInvividualValid(GeneticIndividual & ind) {
 	return std::all_of(ind.budget.begin(), ind.budget.end(), [](int amount) { return amount <= 0; });
-}
-
-void heuristicSearch(GeneticIndividual ind, Problem problem) {
-	
-	GeneticIndividual currentInd = ind;
-	GeneticIndividual oneToOneIndividual, oneToTwoIndividual, twoToOneIndividual, twoToTwoIndividual;
-	bool shouldContinue = true;
-	while (shouldContinue) {
-		shouldContinue = false;
-		for (int i = 0; i < problem.nModels; i++) {
-			for (int j = 0; j < problem.nModels; j++) {
-				for (int k = 0; k < problem.nModels; k++) {
-					if (k != i) {
-						for (int l = 0; l < problem.nModels; l++) {
-							oneToOneIndividual = currentInd;
-							addIndividualGenes(oneToOneIndividual, problem, i);
-							subIndividualGenes(oneToOneIndividual, problem, j);
-
-							oneToTwoIndividual = currentInd;
-							addIndividualGenes(oneToTwoIndividual, problem, i);
-							subIndividualGenes(oneToTwoIndividual, problem, j);
-							subIndividualGenes(oneToTwoIndividual, problem, l);
-
-							twoToOneIndividual = currentInd;
-							addIndividualGenes(twoToOneIndividual, problem, i);
-							addIndividualGenes(twoToOneIndividual, problem, k);
-							subIndividualGenes(twoToOneIndividual, problem, j);
-
-							twoToTwoIndividual = currentInd;
-							addIndividualGenes(twoToTwoIndividual, problem, i);
-							addIndividualGenes(twoToTwoIndividual, problem, k);
-							subIndividualGenes(twoToTwoIndividual, problem, j);
-							subIndividualGenes(twoToTwoIndividual, problem, l);
-
-							std::vector<int> potentialCosts = { oneToOneIndividual.totalCost, oneToTwoIndividual.totalCost, twoToOneIndividual.totalCost, twoToTwoIndividual.totalCost };
-							std::sort(potentialCosts.begin(), potentialCosts.end());
-
-							for (int c = potentialCosts.size() - 1; c >= 0; c--) {
-								if (potentialCosts[c] >= currentInd.totalCost) 
-								{
-									break;
-								}
-								if (potentialCosts[c] == oneToOneIndividual.totalCost && isInvividualValid(oneToOneIndividual))
-								{
-									currentInd = oneToOneIndividual;
-									shouldContinue = true;
-									printIndividual(currentInd);
-									break;
-								}
-								else if (potentialCosts[c] == oneToTwoIndividual.totalCost && isInvividualValid(oneToTwoIndividual))
-								{
-									currentInd = oneToTwoIndividual;
-									shouldContinue = true;
-									printIndividual(currentInd);
-									break;
-								}
-								else if (potentialCosts[c] == twoToOneIndividual.totalCost && isInvividualValid(twoToOneIndividual))
-								{
-									currentInd = twoToOneIndividual;
-									shouldContinue = true;
-									printIndividual(currentInd);
-									break;
-								}
-								else if (potentialCosts[c] == twoToTwoIndividual.totalCost && isInvividualValid(twoToTwoIndividual))
-								{
-									currentInd = twoToTwoIndividual;
-									shouldContinue = true;
-									printIndividual(currentInd);
-									break;
-								}
-
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	
 }
 
 void solveGenetic(const Problem & problem, int nIterations)
@@ -527,8 +412,4 @@ void solveGenetic(const Problem & problem, int nIterations)
 		std::cout << "finished evolution #" << i << std::endl;
 #endif
 	}
-	std::cout << "Genetic algorithm completed. Starting local search." << std::endl;
-	GeneticIndividual foundIndividual = population.individuals[0];
-	heuristicSearch(foundIndividual, problem);
-
 }

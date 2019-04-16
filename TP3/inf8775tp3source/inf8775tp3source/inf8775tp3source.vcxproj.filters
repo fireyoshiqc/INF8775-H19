@@ -24,15 +24,9 @@
     <ClCompile Include="genetic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="solution.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="problem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="solution.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="genetic.h">

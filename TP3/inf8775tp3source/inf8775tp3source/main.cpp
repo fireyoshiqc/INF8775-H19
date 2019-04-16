@@ -1,13 +1,6 @@
 #include "problem.h"
-#include "solution.h"
 #include "genetic.h"
 #include <ctime>
-
-/*
-Solution solver(const Problem & problem) {
-}
-*/
-
 
 int main(int argc, char *argv[]) {
 	srand(time(nullptr));
@@ -32,16 +25,9 @@ int main(int argc, char *argv[]) {
 		std::cerr << "Fichier en entrée invalide." << std::endl;
 		return 1;
 	}
-	//std::vector<GeneticIndividual> population;
-	//population.reserve(10);
-	//for (size_t i = 0; i < 10; i++)
-	//	population.emplace_back(generateRandomIndividual(problem));
-	//std::cout << population.size() << std::endl;
 
-	//printProblem(problem);
 	solveGenetic(problem);
 
-	
 	#ifdef _WIN32
 		system("pause");
 	#endif

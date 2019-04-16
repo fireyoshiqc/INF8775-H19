@@ -117,18 +117,17 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="genetic.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="problem.cpp" />
-    <ClCompile Include="solution.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="genetic.h" />
     <ClInclude Include="problem.h" />
-    <ClInclude Include="solution.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

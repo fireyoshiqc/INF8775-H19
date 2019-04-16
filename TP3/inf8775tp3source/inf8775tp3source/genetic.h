@@ -1,20 +1,19 @@
 #pragma once
 #include <vector>
 #include "problem.h"
-#include "solution.h"
 
 //TODO: find the best possible parameters (trial and error / script to run the program using 
 // different parameters (would need restructuration of code to be able to pass parameters
 // as non-constant values )
 
 
-const int POPULATION_SIZE = 50000;
+const int POPULATION_SIZE = 100000;
 const int PROPORTION_PRESERVED_GENES_CROSSOVER = 60; //0-100 (percentage)
 const int MINIMAL_MUTATION_ITERATIONS = 2;
 const int MINIMAL_ATLER_ITERATIONS = 2;
 const int MINIMAL_REGRESS_ITERATIONS = 0;
-const int EVOLVE_ITERATIONS = 50000;
-const int NUMBER_OF_SURVIVORS = 25000; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
+const int EVOLVE_ITERATIONS = 25000;
+const int NUMBER_OF_SURVIVORS = 50000; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
 const int RANDOM_GENERATION_FILL_THRESHOLD = 10; // max number of pieces remaining for each type before stopping random filling in individual generation
 
 struct GeneticIndividual 
@@ -66,6 +65,6 @@ void nuclearCataclysm(GeneticPopulation & population, std::vector<GeneticIndivid
 
 void printIndividual(GeneticIndividual ind);
 
-void evolve(GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType);
+void evolve(int i, GeneticPopulation& population, const Problem& problem, std::vector<int>& bestModelsPerPieceType);
 
 void solveGenetic(const Problem & problem, int nIterations = EVOLVE_ITERATIONS);
