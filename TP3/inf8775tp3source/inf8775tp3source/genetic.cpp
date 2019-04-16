@@ -5,6 +5,8 @@
 // also in object: store the values for greedy fill (the best model for each type of piece)
 //TODO: compute cost for each model and store it in structures Model to avoid recalculating it everytime
 
+#define REMISE
+
 float modelScoreForType(Model model, int pieceTypeIdx)
 {
 	int pieceQuantity = model.modelCosts[pieceTypeIdx];
@@ -390,15 +392,17 @@ void violentBreeding(GeneticPopulation & population, std::vector<GeneticIndividu
 		{
 			willingPartner = rand() % NUMBER_OF_SURVIVORS;
 		} while (willingPartner == 0);
-		GeneticIndividual newIndividual = crossoverMin(alphaMale, survivors[sexSlaveIdx], problem, bestModelsPerPieceType);
+		GeneticIndividual newIndividual = crossoverMin(alphaMale, survivors[willingPartner], problem, bestModelsPerPieceType);
 		population.individuals[i] = newIndividual;
 	}
 }
 
 void printIndividual(GeneticIndividual ind) 
 {
+#ifndef REMISE
 	std::cout << "Best individual cost: " << ind.totalCost << std::endl;
 	std::cout << "Best individual solution: ";
+#endif
 	for (int i = 0; i < ind.modelGenes.size(); i++) 
 	{
 		std::cout << ind.modelGenes[i] << " ";
@@ -443,8 +447,12 @@ void solveGenetic(const Problem & problem)
 
 	for (int i = 0; i < EVOLVE_ITERATIONS; i++) 
 	{
+#ifndef REMISE
 		std::cout << "starting evolution #" << i << std::endl;
+#endif
 		evolve(i, population, problem, bestModelsPerPieceType);
+#ifndef REMISE
 		std::cout << "finished evolution #" << i << std::endl;
+#endif
 	}
 }
