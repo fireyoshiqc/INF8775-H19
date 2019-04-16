@@ -8,13 +8,13 @@
 // as non-constant values )
 
 
-const int POPULATION_SIZE = 30000;
+const int POPULATION_SIZE = 50000;
 const int PROPORTION_PRESERVED_GENES_CROSSOVER = 60; //0-100 (percentage)
 const int MINIMAL_MUTATION_ITERATIONS = 2;
 const int MINIMAL_ATLER_ITERATIONS = 2;
-const int MINIMAL_REGRESS_ITERATIONS = 2;
-const int EVOLVE_ITERATIONS = 500;
-const int NUMBER_OF_SURVIVORS = 28000; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
+const int MINIMAL_REGRESS_ITERATIONS = 0;
+const int EVOLVE_ITERATIONS = 50000;
+const int NUMBER_OF_SURVIVORS = 25000; // Sandwiched by: 0 < NUMBER_OF_SURVIVOR <= POPULATION_SIZE
 const int RANDOM_GENERATION_FILL_THRESHOLD = 10; // max number of pieces remaining for each type before stopping random filling in individual generation
 
 struct GeneticIndividual 

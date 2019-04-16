@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "genetic.h"
+#include <omp.h>
 
 //TODO: make objects for solver to store problem in a bigger scope (too many functions needs the problem data)
 // also in object: store the values for greedy fill (the best model for each type of piece)
@@ -286,18 +287,9 @@ void regressIndividual(int numberOfIterations, GeneticIndividual & individual, c
 		subIndividualGenes(newIndividual, problem, modelIdx);
 	}
 	
-	bool flip = rand() % 2;
-	if (flip)
-	{
-		greedyFill(newIndividual, problem, bestModelsPerPieceType);
-	}
-	else
-	{
-		randomFill(newIndividual, problem);
-	}
 
-	//greedyFill(newIndividual, problem, bestModelsPerPieceType);
-	//randomFill(newIndividual, problem);
+	randomFill(newIndividual, problem);
+
 
 	if (newIndividual.totalCost < individual.totalCost)
 	{
@@ -377,10 +369,12 @@ void nuclearCataclysm(GeneticPopulation & population, std::vector<GeneticIndivid
 
 void adaptation(int numberOfIterations, GeneticPopulation & population, std::vector<GeneticIndividual> survivors, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
+#pragma omp parallel for
 	for (int i = NUMBER_OF_SURVIVORS; i < POPULATION_SIZE; i++)
 	{
 		int parentIdx = rand() % NUMBER_OF_SURVIVORS;
 		GeneticIndividual newIndividual = survivors[parentIdx];
+		numberOfIterations = (rand() % numberOfIterations) + 1;
 		regressIndividual(numberOfIterations, newIndividual, problem, bestModelsPerPieceType);
 		population.individuals[i] = newIndividual;
 	}
@@ -415,6 +409,7 @@ void printIndividual(GeneticIndividual ind)
 
 void evolve(int i, GeneticPopulation & population, const Problem & problem, std::vector<int> & bestModelsPerPieceType)
 {
+#pragma omp parallel for
 	for (int i = 0; i < POPULATION_SIZE; i++) 
 	{
 		mutateIndividual(population.individuals[i], problem, bestModelsPerPieceType);
@@ -423,19 +418,10 @@ void evolve(int i, GeneticPopulation & population, const Problem & problem, std:
 
 	printIndividual(survivors[0]);
 	
-	bool flip = 1;// rand() % 3;
-	if (flip == 0) 
-	{
-		//violentBreeding(population, survivors, problem, bestModelsPerPieceType);
-		adaptation((MINIMAL_REGRESS_ITERATIONS + i/10), population, survivors, problem, bestModelsPerPieceType);
-	}
-	else if (flip == 1)
-	{
-		adaptation((MINIMAL_REGRESS_ITERATIONS), population, survivors, problem, bestModelsPerPieceType);
-	}
-	else {
-		adaptation((MINIMAL_REGRESS_ITERATIONS + i / 5), population, survivors, problem, bestModelsPerPieceType);
-	}
+	int minimalRegressIterations = problem.nModels / 5;
+	adaptation((minimalRegressIterations), population, survivors, problem, bestModelsPerPieceType);
+
+
 
 	//violentBreeding(population, survivors, problem, bestModelsPerPieceType);
 	//nuclearCataclysm(population, survivors, problem, bestModelsPerPieceType);
