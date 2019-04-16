@@ -168,7 +168,10 @@ void addIndividualGenes(GeneticIndividual & individual, const Problem & problem,
 
 void subIndividualGenes(GeneticIndividual & individual, const Problem & problem, size_t index)
 {
-	individual.modelGenes[index] --;
+	/*if (individual.modelGenes[index] <= 0) {
+		std::cout << "THE NUMBER OF MODELS CAN'T BE NEGATIVE!!!" << std::endl;
+	}
+	individual.modelGenes[index] --;*/
 
 	// update budget
 	for (size_t i = 0; i < individual.budget.size(); i++)
@@ -355,7 +358,7 @@ std::vector<GeneticIndividual> selectSurvivors(GeneticPopulation & population)
 {
 	sortPopulation(population);
 	std::vector<GeneticIndividual> survivors(NUMBER_OF_SURVIVORS);
-	survivors = slice(population.individuals, 0, NUMBER_OF_SURVIVORS);
+	survivors = slice(population.individuals, 0, NUMBER_OF_SURVIVORS - 1);
 	return survivors;
 }
 
@@ -416,7 +419,7 @@ void evolve(int i, GeneticPopulation & population, const Problem & problem, std:
 
 	printIndividual(survivors[0]);
 	
-	bool flip = rand() % 3;
+	bool flip = 1;// rand() % 3;
 	if (flip == 0) 
 	{
 		//violentBreeding(population, survivors, problem, bestModelsPerPieceType);
@@ -435,16 +438,103 @@ void evolve(int i, GeneticPopulation & population, const Problem & problem, std:
 	//adaptation(population, survivors, problem, bestModelsPerPieceType);
 }
 
-void solveGenetic(const Problem & problem) 
+bool isInvividualValid(GeneticIndividual & ind) {
+	return std::all_of(ind.budget.begin(), ind.budget.end(), [](int amount) { return amount <= 0; });
+}
+
+void heuristicSearch(GeneticIndividual ind, Problem problem) {
+	
+	GeneticIndividual currentInd = ind;
+	GeneticIndividual oneToOneIndividual, oneToTwoIndividual, twoToOneIndividual, twoToTwoIndividual;
+	bool shouldContinue = true;
+	while (shouldContinue) {
+		shouldContinue = false;
+		for (int i = 0; i < problem.nModels; i++) {
+			for (int j = 0; j < problem.nModels; j++) {
+				for (int k = 0; k < problem.nModels; k++) {
+					if (k != i) {
+						for (int l = 0; l < problem.nModels; l++) {
+							oneToOneIndividual = currentInd;
+							addIndividualGenes(oneToOneIndividual, problem, i);
+							subIndividualGenes(oneToOneIndividual, problem, j);
+
+							oneToTwoIndividual = currentInd;
+							addIndividualGenes(oneToTwoIndividual, problem, i);
+							subIndividualGenes(oneToTwoIndividual, problem, j);
+							subIndividualGenes(oneToTwoIndividual, problem, l);
+
+							twoToOneIndividual = currentInd;
+							addIndividualGenes(twoToOneIndividual, problem, i);
+							addIndividualGenes(twoToOneIndividual, problem, k);
+							subIndividualGenes(twoToOneIndividual, problem, j);
+
+							twoToTwoIndividual = currentInd;
+							addIndividualGenes(twoToTwoIndividual, problem, i);
+							addIndividualGenes(twoToTwoIndividual, problem, k);
+							subIndividualGenes(twoToTwoIndividual, problem, j);
+							subIndividualGenes(twoToTwoIndividual, problem, l);
+
+							std::vector<int> potentialCosts = { oneToOneIndividual.totalCost, oneToTwoIndividual.totalCost, twoToOneIndividual.totalCost, twoToTwoIndividual.totalCost };
+							std::sort(potentialCosts.begin(), potentialCosts.end());
+
+							for (int c = potentialCosts.size() - 1; c >= 0; c--) {
+								if (potentialCosts[c] >= currentInd.totalCost) 
+								{
+									break;
+								}
+								if (potentialCosts[c] == oneToOneIndividual.totalCost && isInvividualValid(oneToOneIndividual))
+								{
+									currentInd = oneToOneIndividual;
+									shouldContinue = true;
+									printIndividual(currentInd);
+									break;
+								}
+								else if (potentialCosts[c] == oneToTwoIndividual.totalCost && isInvividualValid(oneToTwoIndividual))
+								{
+									currentInd = oneToTwoIndividual;
+									shouldContinue = true;
+									printIndividual(currentInd);
+									break;
+								}
+								else if (potentialCosts[c] == twoToOneIndividual.totalCost && isInvividualValid(twoToOneIndividual))
+								{
+									currentInd = twoToOneIndividual;
+									shouldContinue = true;
+									printIndividual(currentInd);
+									break;
+								}
+								else if (potentialCosts[c] == twoToTwoIndividual.totalCost && isInvividualValid(twoToTwoIndividual))
+								{
+									currentInd = twoToTwoIndividual;
+									shouldContinue = true;
+									printIndividual(currentInd);
+									break;
+								}
+
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+}
+
+void solveGenetic(const Problem & problem, int nIterations)
 {
 	std::vector<int> bestModelsPerPieceType = findBestModelsPerPieceType(problem);
-	//GeneticPopulation population = generateRandomPopulation(problem);
-	GeneticPopulation population = generatGreedyPopulation(problem, bestModelsPerPieceType);
+	GeneticPopulation population = generateRandomPopulation(problem);
+	//GeneticPopulation population = generatGreedyPopulation(problem, bestModelsPerPieceType);
 
-	for (int i = 0; i < EVOLVE_ITERATIONS; i++) 
+	for (int i = 0; i < nIterations; i++) 
 	{
 		std::cout << "starting evolution #" << i << std::endl;
 		evolve(i, population, problem, bestModelsPerPieceType);
 		std::cout << "finished evolution #" << i << std::endl;
 	}
+	std::cout << "Genetic algorithm completed. Starting local search." << std::endl;
+	GeneticIndividual foundIndividual = population.individuals[0];
+	heuristicSearch(foundIndividual, problem);
+
 }
